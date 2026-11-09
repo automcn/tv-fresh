@@ -1,10 +1,47 @@
-# 小米电视去广告 + 换开源桌面完全攻略（推荐 Projectivy）
+# 小米电视去广告 + 第三方桌面 + 家庭影音优化（推荐 Projectivy）
 
-> 适用于国内版 MIUI TV（实测机型 MiTV-ASTP0 / Android 9，2026-10 成功）
-> 免 root、全程可逆（所有操作都有对应还原命令）。
-> 原理：ADB 调试 + `pm uninstall --user 0`（只对当前用户卸载，系统分区不动，
-> `cmd package install-existing <包名>` 一条命令可还原）。
+> **当前策略：先备份、只读检查、按固件选择方案。** 既有作者实测机型 MiTV-ASTP0 / Android 9；
+> 新增家庭场景含 65 寸小米电视 4A / MIUI TV 1.3.85 / Android 6.0.1（**待 ADB 真机核对**）。
+> 新清理脚本默认只预览，单个组件确认后通过 `pm disable-user --user 0` 停用，并保留原始状态快照；
+> 不自动卸载原厂桌面，不禁用 AOSP Settings，不更改 IPTV/米家/会员数据。
 ![改造后的电视桌面（Projectivy Launcher + 无广告 + CMFA/SmartTube/影视仓全家桶）](docs/desktop-home.jpg)
+
+## 家庭常用首页 / 上海电信 IPTV / 会员视频（推荐先做）
+
+> 和“一键全家桶”的去广告、批量清理不同，**家庭使用先保留现有账号和功能**。尤其是米家/小爱/投屏、银河奇异果（爱奇艺）等付费视频、上海电信 IPTV 机顶盒；不要误删系统服务、清数据或盲目替换 App。
+
+**先做无破坏操作，再考虑精简系统：**
+
+1. 电视先确认正常能用：米家联动、小爱、会员付费片、IPTV 直播和回看。
+2. 在 Projectivy 中设置 5～8 项“常用”：**上海电信 IPTV（已连接的 HDMI 输入源） / 银河奇异果或其他正版视频 / 米家 / 影片库 / 投屏 / 设置**。
+3. **电影/追剧推荐优先交给原生正版 App** 的收藏、继续观看和内容推荐；不再引入 NAS 服务器或新建跨 App 推荐服务。
+4. 只有确有需要才开展系统精简。先用只读脚本盘点安装状态，变更前列清单并单独确认：
+
+```bash
+bash scripts/tv-preflight.sh <电视IP>             # 只读检测
+python3 scripts/tv-favorites.py --ip <电视IP>    # 常用应用推荐顺序，纯只读
+bash tests/tv-preflight-test.sh                 # 模拟测试，不连接电视
+```
+
+| 专题 | 说明 |
+| --- | --- |
+| [常用首页与推荐](references/family-home.md) | 首屏布局、常用入口、继续观看的能力边界 |
+| [上海电信 IPTV](references/iptv-shanghai.md) | 原机顶盒 + HDMI，避免改运营商认证/光猫 |
+| [米家和付费视频兼容性](references/compatibility.md) | 保护账号/会员/DRM、设备联动和回归验收 |
+| [参考项目和选型](references/similar-projects.md) | CleanYourTV / LTvLauncher / FLauncher；NAS 与服务器播放器留在独立分支 |
+| [老款 Android 6 小米电视](references/legacy-miui-android6.md) | MIUI TV 1.3.85、ADB 开启与安装兼容性 |
+| [Android 6 影音完全体](references/android6-av-suite.md) | SmartTube、CMFA、Projectivy、影视仓的优先级与真实设备验收 |
+| [借鉴 CleanYourTV 安全流程](references/cleanyourtv-practices.md) | 只读检查、单包停用、可恢复 |
+
+**特别注意：**小米不同机型 HOME 解析行为不同，原有的“卸载 PatchWall + 禁用 `com.android.tv.settings`”仅是既有机型实测方案，**不能直接套用到其他小米电视**。先尝试更改首选桌面并检查是否生效，不要把禁用系统设置作为第一步。
+
+**实际只读核验（2026-11-09）**：家用小米电视 4A / `matrix` / Android 6.0.1（API 23、32 位），
+原厂 HOME 仍为 `com.mitv.tvhome`，已安装 `cn.sh.smartiptv`（上海 IPTV 候选）、
+银河奇异果、腾讯视频、优酷、米家和小爱；没有 Projectivy。旧固件 `cmd package` 命令不可用。
+已测试常用推荐工具，未对电视执行安装、停用或数据清理。真实局域网地址、MAC、个人账号及快照不提交仓库。
+详见 [该设备验证记录](references/legacy-miui-android6.md)。
+
+---
 
 # 作为 Agent Skill 使用（推荐）
 
@@ -19,12 +56,12 @@ git clone https://github.com/wangrongding/tv-fresh ~/.agents/skills/tv-fresh
 
 ## 安装后的使用示范（复制即用）
 
-**一键全家桶**（复刻本仓库作者的完整改造效果）：
+**Android 9 既有实测路线示例（不是老款 Android 6 电视的默认方案）：**
 
 ```text
 我的小米电视(MIUI TV)要全面改造，按 tv-fresh 技能流程来：
 1. 去广告：清掉广告/推送/统计组件，OTA 复活了要能重跑
-2. 换桌面：装 Projectivy Launcher，开机直达无广告，PatchWall 禁用但保留可恢复
+2. 换桌面：装 Projectivy Launcher，优先只设置首选桌面并验证；若确需修改系统包先核对机型并经我单独确认
 3. 装代理：Clash Meta(CMFA)，配置文件在 <你的配置路径/URL>，规则要国内直连、节点挂了不影响电视
 4. 装 YouTube 客户端 SmartTube
 5. 装影视仓 + OK影视(FongMi)，配置源用 http://肥猫.net/tv
@@ -51,7 +88,7 @@ git clone https://github.com/wangrongding/tv-fresh ~/.agents/skills/tv-fresh
 | 项 | 结果 |
 |---|---|
 | 广告/推送/统计组件 | 全部移除，重启存活 |
-| 开机桌面 | PatchWall（瀑布流+广告）→ **Projectivy**（开源、可自定义，实测在用） |
+| 开机桌面 | PatchWall（瀑布流+广告）→ **Projectivy**（可自定义，实测在用；官方 GitHub 仓库主要是发布/配置/问题追踪，不等同完整开源） |
 | HOME 键 | 始终回到 Projectivy |
 | 系统设置 | 不受影响（`com.xiaomi.mitv.settings`） |
 
@@ -95,12 +132,14 @@ adb devices   # 确认 device 状态（unauthorized=电视上有弹窗没点）
 | `com.mitv.shoplugin` | 商城插件 |
 
 ```bash
-adb shell pm uninstall --user 0 com.miui.analytics
-# ...逐个执行；先 pm list packages 确认存在再删
+bash scripts/mitv-debloat.sh debloat <TV_IP>                   # 只读预览
+# 只有用户确认某个组件，且型号/固件核对后才考虑：
+bash scripts/mitv-debloat.sh debloat <TV_IP> --apply <单个包名>
 ```
 
-**不要碰**：`com.android.packageinstaller`、`com.mitv.tvplayer` 等核心组件。
-**OTA 升级可能复活组件**：重跑一遍即可。
+**不要碰**：`com.android.packageinstaller`、`com.mitv.tvplayer`、系统设置/输入源、
+米家、小爱、付费视频 App 及其 DRM/牌照与登录服务。**Android 6.0.1 尤其不能套 Android 9 的脚本**。
+**OTA 升级可能恢复已禁用组件**：先重新只读盘点，严禁自动重跑旧清理清单。
 
 ## 四、路由器层辅助（可选）
 
@@ -112,7 +151,7 @@ adb shell pm uninstall --user 0 com.miui.analytics
 
 ## 目标
 
-开机不进 PatchWall，直接进 **[Projectivy](https://projectivylauncher.com/)**（开源、可自定义壁纸/分组/屏保，作者在用）。方法对任意带 HOME 过滤器的桌面通用。
+在适配机型上可尝试 **[Projectivy](https://projectivylauncher.com/)**。不能推断所有 MIUI TV 固件都能更改 HOME；Projectivy 的官方 GitHub 主要是版本发布和配置/问题追踪，不等同完整开源 Launcher。
 
 ## 踩坑记录（排除法）
 
@@ -152,31 +191,28 @@ $ adb shell dumpsys package | grep -A6 'Preferred Activities'
    mMatch=0x100000 mAlways=false                  # 首选在但被规则跳过
 ```
 
-## 最终解法 ✅
+## MiTV-ASTP0 特定固件实测解法（勿作为其它型号通用步骤）
+
+原逆向实验曾使用停用 PatchWall 与 AOSP 兜底页的特殊方式解决旧固件的 HOME 解析问题。
+**这段历史实验不再作为可直接复制执行的命令提供**，因为它可能影响其他机型的设置、
+HDMI 输入源和 HOME 恢复路径。完整设计背景见本节上方；生产使用请遵守
+[安全换桌面流程](references/launcher-swap.md)。
 
 ```bash
-adb connect <TV_IP>:5555
-# 1. 装 Projectivy（armeabi-v7a 版）
-adb install ProjectivyLauncher-*-xda-release.apk
-# 2. 注册首选桌面
-adb shell cmd package set-home-activity com.spocky.projengmenu/com.spocky.projengmenu.ui.home.MainActivity
-# 3. 禁用 PatchWall（保留在系统分区，可随时还原）
-adb shell pm uninstall --user 0 com.mitv.tvhome
-# 4. 关键一步：禁用兜底页宿主（AOSP 设置包）
-adb shell pm disable-user --user 0 com.android.tv.settings
-# 5. 验证：HOME 键应落在 Projectivy
-adb shell input keyevent 3 && adb shell dumpsys window windows | grep mCurrentFocus
+# 仅在通过 ADB 核实机型、安装包与 Android API 后，尝试非破坏 HOME 注册：
+bash scripts/mitv-debloat.sh sethome <TV_IP> com.spocky.projengmenu/com.spocky.projengmenu.ui.home.MainActivity
+# 若系统仍解析到原厂桌面，停止，不强制禁用系统包。
 ```
 
-> 第 4 步安全性说明：国内 MIUI TV 用户看到的中文「设置」是 `com.xiaomi.mitv.settings`，
-> AOSP 的 `com.android.tv.settings` 只承载兜底页（和英文设置入口），禁用不影响日常使用。
+> 此步骤只反映 MiTV-ASTP0 上记录的实测经验。**其他小米电视的 `com.android.tv.settings` 可能承载系统设置、输入源等功能，不应直接禁用。** 在任何修改前，优先使用 `bash scripts/mitv-debloat.sh sethome <TV_IP> <Launcher包名/Activity>` 检查 HOME 是否已经生效。现有脚本已禁用旧式强制换桌面操作；详见 [launcher-swap](references/launcher-swap.md)。
 
 ## 一键回滚
 
 ```bash
-adb shell cmd package install-existing com.mitv.tvhome   # 恢复 PatchWall
-adb shell pm enable com.android.tv.settings               # 恢复兜底页
-adb shell pm uninstall com.spocky.projengmenu            # （可选）卸载 Projectivy
+# 如此前曾手动停用原厂桌面：恢复桌面入口（需 ADB、型号核对）
+bash scripts/mitv-debloat.sh restorehome <TV_IP>
+# 如本项目停用了其它单个候选组件：按对应快照精确恢复
+bash scripts/mitv-debloat.sh restore <TV_IP> <快照目录>
 ```
 
 ## 其它注意事项
@@ -226,10 +262,9 @@ adb shell am start -a android.intent.action.VIEW \
 ## 四、批量清理预装 & 权限修复
 
 ```bash
-# 第三方预装直接卸载
-adb shell uninstall com.cibn.tv com.newtv.cboxtv com.ktcp.video ...
-# 系统包用 --user 0（可逆）
-adb shell pm uninstall --user 0 com.mitv.shoplugin
+# 先只读列出所有组件，保留牌照/播放/账号与 HDMI 服务
+bash scripts/tv-preflight.sh <TV_IP>
+# 当前安全脚本只允许经人工核对的单包停用，不进行批量卸载
 # 存储权限曾被"拒绝且不再询问"(USER_FIXED)的，系统层直接改判：
 adb shell pm grant com.github.tvbox.osc.tk android.permission.READ_EXTERNAL_STORAGE
 adb shell pm grant com.github.tvbox.osc.tk android.permission.WRITE_EXTERNAL_STORAGE
