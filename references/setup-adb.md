@@ -1,34 +1,33 @@
-# 连接电视：解锁开发者模式与 ADB
+# 小米电视连接：开发模式与 ADB（无 Root）
 
-## 电视侧开启（遥控器）
+## 电视侧操作
 
-1. **设置 → 关于 → 「产品型号」（或「版本号」）连按"确定"5-7 次** → 提示已开启开发者模式
-2. **设置 → 账号与安全 → ADB 调试 → 允许**（部分固件在 设置 → 通用设置 → 开发者选项）
-3. 首次连接电视弹 RSA 授权框 → 选"允许"（勾选"一律允许"）
+老款小米电视 4A 65 寸、MIUI TV 1.3.85 的相关历史经验：
+1. 设置 → 关于 → **产品型号**，遥控器连续按确定约 7 次。
+2. 返回 → **账号与安全** → ADB 调试 → 允许。
+3. 如屏幕出现计算机指纹授权，遥控器选择允许。
 
-## 常见坑
+此路径因具体型号和固件不同可能稍有变化。仅授权同一可信局域网内的本机电脑，操作完应关闭 ADB。
 
-| 现象 | 处理 |
-|---|---|
-| 「账号与安全」里没有 ADB 调试 | 开发者模式没解锁，回第 1 步连按型号 |
-| **每次重启后 ADB 自动关闭** | MIUI TV 常见设定；用语音键说"打开设置"→ 账号与安全 → 重新开启 |
-| 没有桌面可导航时 | 语音键是系统级的，桌面挂了也能用 |
-| unauthorized | 电视屏幕上有授权弹窗没点 |
-| 连不上 5555 | 电视与电脑不同网段（访客网络隔离最常见）；电视 2.4G/5G 无所谓，同路由即可 |
-
-## 定位电视 IP
-
-路由器管理页，或对局域网扫 5555 端口：
+## 上海 Mac 只读联机
 
 ```bash
-seq 1 254 | sed 's/^/192.168.1./' | xargs -P 64 -I{} sh -c \
-  'timeout 0.6 bash -c "echo >/dev/tcp/{}/5555" 2>/dev/null && echo "{} is TV"'
+adb connect <TV_IP>:5555
+adb -s <TV_IP>:5555 get-state
+adb -s <TV_IP>:5555 shell getprop ro.product.model
+adb -s <TV_IP>:5555 shell getprop ro.build.version.sdk
+adb -s <TV_IP>:5555 shell getprop ro.product.cpu.abi
+adb -s <TV_IP>:5555 shell getprop ro.build.version.incremental
+bash scripts/tv-preflight.sh <TV_IP>
 ```
 
-## 身份/用途确认命令
+- `Connection refused`：电视网络可达，但 ADB 5555 没有监听，优先检查电视 ADB 开关。
+- `unauthorized`：电视还没批准电脑指纹。
+- 超时：确认电视已唤醒、与电脑同一非隔离局域网。
+- Android 6 的某些 `cmd package` 子命令可能不可用。不得用禁用系统包试图“修复” ADB 或 HOME。
+- 若重启后 ADB 自动关闭，按设备自己的设置重新启用。
 
-```bash
-adb shell getprop ro.product.model     # 机型
-adb shell getprop ro.product.cpu.abi   # armeabi-v7a → 装包选 v7a/32位
-adb shell getprop ro.build.version.release
-```
+局域网自动发现可参考 mDNS/AirPlay 广播，但**发现名称不能代替 ADB 读取真实 `ro.product.model`**。
+不要扫描非本人管理的网络，也不要向路由器公网映射 TCP 5555。
+
+参考：[老款 Android 6 兼容](legacy-miui-android6.md)。

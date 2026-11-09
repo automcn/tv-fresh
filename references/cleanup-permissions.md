@@ -1,24 +1,29 @@
-# 批量清理预装与权限修复
+# 预装、权限与账户兼容
 
-## 流程
+默认只做 **只读盘点**，不把“第三方应用”自动等同“可卸载”。
 
-1. **盘点**：`adb shell pm list packages -3`（第三方）+ `pm list packages`（全部）
-2. **归类**：给用户一张编号表（应用名/包名/类型/是否可逆），让用户挑编号
-3. **执行**：第三方用 `adb uninstall`（彻底）；系统包用 `pm uninstall --user 0`（可逆）
-4. **交付**：附恢复命令清单
-
-> 危险判断拿不准的包：`adb shell dumpsys package <pkg> | grep -A3 LAUNCHER` 看组件真身再归类。
-
-## 权限修复（存储权限被"拒绝且不再询问"USER_FIXED 后应用静默残废）
+## 检查
 
 ```bash
-adb shell pm grant <pkg> android.permission.READ_EXTERNAL_STORAGE
-adb shell pm grant <pkg> android.permission.WRITE_EXTERNAL_STORAGE
-adb shell pm clear <pkg>   # 清数据后权限会丢，记得重授
+bash scripts/tv-preflight.sh <TV_IP>  # 首选只读检查，按型号与固件保存本地结果
 ```
 
-## 已验证可安全删除的预装（用户确认后）
+保护以下家庭依赖：米家/小爱/投屏、HDMI 电视输入、上海电信 IPTV 原机顶盒，
+电视端付费视频（奇异果/爱奇艺、腾讯、优酷等）、DRM/牌照、登录认证、应用商店、系统设置。
 
-牌照方内容：cibn/newtv/ktcp/xiaodianshi(yst)；推广：cmgame/tencent.start.tv/hunantv.license；
-小米系冗余：alarmcenter/karaoke.service/shoplugin/tvmanager/gallery×2/mediaexplorer/
-healthdiagnosis/appstore(用户拍板)/cloudcontrol/tvqs（见 debloat.md 红线外的清单）
+## 变更规则
+
+- **不得批量卸载系统或第三方应用**；先知道真实 App 名称、用途、成员是否正在使用。
+- 任何系统包清理都应优先 `pm disable-user --user 0`、先快照后单项调整，
+  且仅在脚本认可的机型范围内由用户确认后执行。
+- 不把 `pm clear` 当“修复权限”：它会清空会员登录、收藏、米家配对等数据。
+- 不能直接批量执行 `pm grant`：权限是否存在、是否可授权，因安卓版本与 App 声明不同。
+- 不要覆盖完整的 `enabled_accessibility_services` 设置；会误移除语音/辅助权限。
+- 旧 Android 6 电视如果暂时没有 ADB，请先在电视设置里确认，**不要因此尝试 Root/刷机**。
+
+## 回归
+
+电视设置、遥控器 HOME/返回/音量、HDMI/IPTV 直播回看、米家联动、
+爱奇艺付费片、投屏以及小爱语音都必须和原状态一致。
+
+详见：[Android 6 兼容](legacy-miui-android6.md) 与 [家庭兼容性](compatibility.md)。
